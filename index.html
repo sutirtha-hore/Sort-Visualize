@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sorting Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background: radial-gradient(circle at top, #0f172a, #020617);
+      }
+      .bar {
+        transition: height 0.7s ease, background-color 0.3s ease, transform 0.3s;
+      }
+      .highlight {
+        background-color: #f43f5e !important;
+        /* box-shadow: 0 0 20px #fb7185; */
+        /* transform: scale(1.1); */
+      }
+      /* .glow {
+        box-shadow: 0 0 20px #38bdf8;
+      } */
+      .glass {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    </style>
+  </head>
+
+  <body
+    class="text-white min-h-screen flex flex-col items-center justify-start p-8"
+  >
+    <h1
+      class="text-5xl font-extrabold mb-8 tracking-wider text-cyan-400 drop-shadow-lg"
+    >
+      ⚙️ Sorting Visualizer
+    </h1>
+
+    <!-- Controls -->
+    <div
+      class="glass p-6 rounded-2xl shadow-lg flex flex-wrap justify-center items-center gap-4 mb-10 w-full max-w-4xl"
+    >
+      <input
+        id="arrayInput"
+        type="text"
+        placeholder="Enter numbers (e.g. 45,12,78,34,23)"
+        class="px-4 py-2 rounded-md text-black w-80 font-semibold"
+      />
+
+      <select
+        id="algorithmSelect"
+        class="px-4 py-2 rounded-md text-black font-semibold"
+      >
+        <option value="bubble">Bubble Sort</option>
+        <option value="selection">Selection Sort</option>
+        <option value="insertion">Insertion Sort</option>
+        <option value="merge">Merge Sort</option>
+        <option value="quick">Quick Sort</option>
+      </select>
+
+      <div class="flex gap-3">
+        <button
+          onclick="startSort('asc')"
+          class="bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:scale-105 transition-all"
+        >
+          🔼 Increasing
+        </button>
+        <button
+          onclick="startSort('desc')"
+          class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:scale-105 transition-all"
+        >
+          🔽 Decreasing
+        </button>
+      </div>
+    </div>
+
+    <!-- Bars -->
+    <div
+      id="barsContainer"
+      class="flex items-end justify-center gap-2 w-full max-w-5xl h-[350px]"
+    ></div>
+
+    <script>
+      const container = document.getElementById("barsContainer");
+      const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+      let array = [45, 12, 78, 34, 23, 9, 56];
+
+      function renderArray(arr, highlightIndexes = []) {
+        container.innerHTML = "";
+        const maxVal = Math.max(...arr);
+        arr.forEach((val, i) => {
+          const bar = document.createElement("div");
+          bar.className =
+            "bar bg-cyan-400 rounded-md flex flex-col items-center justify-end";
+          if (highlightIndexes.includes(i)) bar.classList.add("highlight");
+          bar.style.height = `${(val / maxVal) * 280}px`;
+          bar.style.width = `${85 / arr.length}%`;
+
+          const valueLabel = document.createElement("span");
+          valueLabel.className = "text-xs mb-1 font-bold text-white";
+          valueLabel.innerText = val;
+
+          const indexLabel = document.createElement("span");
+          indexLabel.className = "text-[10px] mt-1 text-gray-400";
+          indexLabel.innerText = i;
+
+          bar.appendChild(valueLabel);
+          bar.appendChild(indexLabel);
+          container.appendChild(bar);
+        });
+      }
+
+      renderArray(array);
+
+      async function startSort(order) {
+        const input = document.getElementById("arrayInput").value;
+        if (input.trim() !== "") {
+          array = input
+            .split(",")
+            .map((n) => parseInt(n.trim()))
+            .filter((n) => !isNaN(n));
+        }
+
+        const algo = document.getElementById("algorithmSelect").value;
+        const arrCopy = [...array];
+
+        if (algo === "bubble") await bubbleSort(arrCopy, order);
+        else if (algo === "selection") await selectionSort(arrCopy, order);
+        else if (algo === "insertion") await insertionSort(arrCopy, order);
+        else if (algo === "merge") await mergeSortWrapper(arrCopy, order);
+        else if (algo === "quick") await quickSortWrapper(arrCopy, order);
+      }
+
+      // ---------------- Sorting Algorithms ------------------
+
+      async function bubbleSort(arr, order) {
+        const n = arr.length;
+        for (let i = 0; i < n - 1; i++) {
+          for (let j = 0; j < n - i - 1; j++) {
+            renderArray(arr, [j, j + 1]);
+            await delay(700);
+            if (
+              (order === "asc" && arr[j] > arr[j + 1]) ||
+              (order === "desc" && arr[j] < arr[j + 1])
+            ) {
+              [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+              renderArray(arr, [j, j + 1]);
+              await delay(700);
+            }
+          }
+        }
+      }
+
+      async function selectionSort(arr, order) {
+        const n = arr.length;
+        for (let i = 0; i < n; i++) {
+          let idx = i;
+          for (let j = i + 1; j < n; j++) {
+            renderArray(arr, [i, j]);
+            await delay(700);
+            if (
+              (order === "asc" && arr[j] < arr[idx]) ||
+              (order === "desc" && arr[j] > arr[idx])
+            ) {
+              idx = j;
+            }
+          }
+          [arr[i], arr[idx]] = [arr[idx], arr[i]];
+          renderArray(arr, [i, idx]);
+          await delay(700);
+        }
+      }
+
+      async function insertionSort(arr, order) {
+        const n = arr.length;
+        for (let i = 1; i < n; i++) {
+          let key = arr[i];
+          let j = i - 1;
+          while (
+            j >= 0 &&
+            ((order === "asc" && arr[j] > key) ||
+              (order === "desc" && arr[j] < key))
+          ) {
+            arr[j + 1] = arr[j];
+            j--;
+            renderArray(arr, [i, j]);
+            await delay(700);
+          }
+          arr[j + 1] = key;
+          renderArray(arr, [i]);
+          await delay(700);
+        }
+      }
+
+      async function mergeSortWrapper(arr, order) {
+        async function mergeSort(arr, l, r) {
+          if (l >= r) return;
+          const m = Math.floor((l + r) / 2);
+          await mergeSort(arr, l, m);
+          await mergeSort(arr, m + 1, r);
+          await merge(arr, l, m, r);
+        }
+
+        async function merge(arr, l, m, r) {
+          let left = arr.slice(l, m + 1);
+          let right = arr.slice(m + 1, r + 1);
+          let i = 0,
+            j = 0,
+            k = l;
+          while (i < left.length && j < right.length) {
+            renderArray(arr, [k]);
+            await delay(700);
+            if (
+              (order === "asc" && left[i] <= right[j]) ||
+              (order === "desc" && left[i] >= right[j])
+            ) {
+              arr[k++] = left[i++];
+            } else {
+              arr[k++] = right[j++];
+            }
+          }
+          while (i < left.length) arr[k++] = left[i++];
+          while (j < right.length) arr[k++] = right[j++];
+          renderArray(arr);
+          await delay(700);
+        }
+
+        await mergeSort(arr, 0, arr.length - 1);
+      }
+
+      async function quickSortWrapper(arr, order) {
+        async function quickSort(arr, low, high) {
+          if (low < high) {
+            let pi = await partition(arr, low, high);
+            await quickSort(arr, low, pi - 1);
+            await quickSort(arr, pi + 1, high);
+          }
+        }
+
+        async function partition(arr, low, high) {
+          let pivot = arr[high];
+          let i = low - 1;
+          for (let j = low; j < high; j++) {
+            renderArray(arr, [j, high]);
+            await delay(700);
+            if (
+              (order === "asc" && arr[j] < pivot) ||
+              (order === "desc" && arr[j] > pivot)
+            ) {
+              i++;
+              [arr[i], arr[j]] = [arr[j], arr[i]];
+              renderArray(arr, [i, j]);
+              await delay(700);
+            }
+          }
+          [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+          renderArray(arr, [i + 1, high]);
+          await delay(700);
+          return i + 1;
+        }
+
+        await quickSort(arr, 0, arr.length - 1);
+      }
+    </script>
+  </body>
+</html>
